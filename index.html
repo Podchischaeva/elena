@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Haunted Apartments</title>
+    <style>
+      :root {
+        --bg: #120d21;
+        --bg-2: #1b1332;
+        --panel: rgba(35, 24, 58, 0.9);
+        --panel-strong: #291d46;
+        --purple: #7a5cff;
+        --purple-2: #9c7bff;
+        --pink: #ff78b7;
+        --gold: #f7d467;
+        --green: #87f0a2;
+        --red: #ff6a6a;
+        --text: #f8f2ff;
+        --muted: #d8d0ee;
+        --shadow: rgba(0, 0, 0, 0.28);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #2a184f 0%, var(--bg) 30%, #090710 100%);
+        color: var(--text);
+      }
+
+      .game {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 28px 18px 50px;
+      }
+
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .title {
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: clamp(2rem, 4vw, 3.3rem);
+        color: #fff4d6;
+        text-shadow: 3px 3px 0 #3a2a5d;
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        font-size: 1.1rem;
+        color: var(--muted);
+      }
+
+      .stars-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+
+      .star {
+        font-size: 1.6rem;
+        opacity: 0.25;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+
+      .star.active {
+        opacity: 1;
+        transform: scale(1.12);
+      }
+
+      .door-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(120px, 1fr));
+        gap: 18px;
+      }
+
+      .door {
+        position: relative;
+        min-height: 116px;
+        border: 3px solid var(--purple);
+        border-radius: 18px;
+        background: linear-gradient(180deg, #2c1d45, #1b1230);
+        color: var(--text);
+        padding: 14px 10px;
+        box-shadow: 0 8px 18px var(--shadow);
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      }
+
+      .door:hover:not(.locked) {
+        transform: translateY(-3px);
+        border-color: var(--pink);
+      }
+
+      .door.selected {
+        box-shadow: 0 0 0 3px rgba(255, 120, 183, 0.35);
+      }
+
+      .door.locked {
+        opacity: 0.55;
+        cursor: default;
+        filter: grayscale(0.15);
+      }
+
+      .door.solved {
+        border-color: var(--green);
+        background: linear-gradient(180deg, #1d3527, #172f25);
+      }
+
+      .door .icon {
+        display: block;
+        font-size: 2.2rem;
+        margin-bottom: 4px;
+      }
+
+      .door .num {
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: var(--gold);
+      }
+
+      .door .label {
+        margin-top: 6px;
+        font-size: 0.76rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .room-panel {
+        margin-top: 22px;
+        padding: 20px 18px 18px;
+        background: rgba(28, 20, 46, 0.92);
+        border: 3px solid #6f57b2;
+        border-radius: 24px;
+        box-shadow: 0 10px 22px rgba(0,0,0,0.28);
+      }
+
+      .room-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .room-title {
+        margin: 0;
+        font-size: clamp(1.4rem, 2vw, 2rem);
+        color: #fff6d7;
+      }
+
+      .status-badge {
+        background: #3d2d65;
+        color: var(--gold);
+        border: 1px solid #8d73d5;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      .question-box {
+        margin-bottom: 18px;
+        padding: 18px 16px;
+        border: 2px solid #423367;
+        border-radius: 16px;
+        background: rgba(15, 12, 26, 0.7);
+        text-align: center;
+        line-height: 1.5;
+        font-size: clamp(1.1rem, 2vw, 1.55rem);
+      }
+
+      .answer-wrap {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        min-height: 62px;
+        margin: 16px 0 20px;
+        padding: 12px;
+        border: 2px dashed #7d6cc8;
+        border-radius: 16px;
+        background: rgba(36, 25, 51, 0.7);
+      }
+
+      .answer-slot {
+        min-width: 96px;
+        padding: 10px 12px;
+        border: none;
+        border-radius: 10px;
+        background: #ecf4ff;
+        color: #1e1b2f;
+        font-weight: 800;
+        text-align: center;
+        cursor: pointer;
+        box-shadow: inset 0 -3px 0 rgba(0,0,0,0.09);
+      }
+
+      .word-bank {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      .word {
+        border: 2px solid var(--purple);
+        border-radius: 12px;
+        padding: 10px 16px;
+        background: linear-gradient(180deg, #ebd6ff, #d7c0ff);
+        color: #1e1b2f;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        transition: transform 0.15s ease, border-color 0.15s ease;
+      }
+
+      .word:hover:not(:disabled) {
+        transform: translateY(-2px);
+        border-color: var(--pink);
+      }
+
+      .word:disabled {
+        opacity: 0.35;
+        cursor: default;
+        filter: grayscale(0.5);
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      .btn {
+        border: none;
+        border-radius: 12px;
+        padding: 12px 18px;
+        background: linear-gradient(180deg, #ffd36b, #f4b934);
+        color: #2a1d17;
+        font-weight: 900;
+        cursor: pointer;
+        box-shadow: 0 5px 0 rgba(0,0,0,0.18);
+        transition: transform 0.15s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn.secondary {
+        background: linear-gradient(180deg, #a7d9ff, #69b2ff);
+        color: #0e1b32;
+      }
+
+      .btn.danger {
+        display: none;
+        background: linear-gradient(180deg, #ff8b8b, #ff5f5f);
+        color: white;
+      }
+
+      .btn.danger.visible {
+        display: inline-block;
+      }
+
+      .message {
+        min-height: 30px;
+        margin-top: 12px;
+        text-align: center;
+        font-weight: 800;
+      }
+
+      .message.good { color: var(--green); }
+      .message.bad { color: var(--red); }
+
+      .secret-room {
+        display: none;
+        margin-top: 26px;
+        padding: 22px 18px;
+        border: 3px solid var(--gold);
+        border-radius: 20px;
+        background: linear-gradient(180deg, #2f1f55, #20162d);
+        text-align: center;
+      }
+
+      .secret-room.visible {
+        display: block;
+        animation: pop 0.4s ease;
+      }
+
+      .secret-room h3 {
+        margin: 0 0 10px;
+        font-size: clamp(1.7rem, 2vw, 2.4rem);
+        color: #fff0ae;
+      }
+
+      .secret-room p {
+        margin: 0;
+        font-size: 1.08rem;
+        color: var(--muted);
+      }
+
+      @keyframes pop {
+        0% { transform: scale(0.96); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      @media (max-width: 720px) {
+        .door-grid {
+          grid-template-columns: repeat(2, minmax(130px, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game">
+      <header class="header">
+        <h1 class="title">Haunted Apartments</h1>
+        <div class="subtitle">Have / Has got &amp; To be</div>
+        <div class="stars-row" id="starsRow"></div>
+      </header>
+
+      <div id="doorGrid" class="door-grid"></div>
+
+      <section id="roomPanel" class="room-panel" aria-live="polite">
+        <div class="room-header">
+          <h2 id="roomTitle" class="room-title">Choose a door</h2>
+          <span id="roomBadge" class="status-badge">Room</span>
+        </div>
+
+        <div id="questionBox" class="question-box">
+          Pick a door to explore. Complete all 8 apartments to unlock the Secret Room.
+        </div>
+
+        <div id="answerWrap" class="answer-wrap"></div>
+        <div id="wordBank" class="word-bank"></div>
+
+        <div class="controls">
+          <button id="clearBtn" type="button" class="btn secondary">Clear</button>
+          <button id="checkBtn" type="button" class="btn">Check</button>
+          <button id="resetBtn" type="button" class="btn danger">Reset Game</button>
+        </div>
+
+        <div id="message" class="message"></div>
+      </section>
+
+      <div id="secretRoom" class="secret-room">
+        <h3>Secret Room Unlocked! 🎉</h3>
+        <p>Congratulations! You completed all 8 apartments and found the hidden treasure.</p>
+      </div>
+    </div>
+
+    <script>
+      const rooms = [
+        {
+          id: 1,
+          name: "Apartment 1",
+          icon: "🕷️",
+          prompt: "Build the sentence: The ghost is in the hallway.",
+          words: ["The", "ghost", "is", "in", "the", "hallway", "a", "very"],
+          answer: ["The", "ghost", "is", "in", "the", "hallway"]
+        },
+        {
+          id: 2,
+          name: "Apartment 2",
+          icon: "🕸️",
+          prompt: "Build the sentence: I am scared.",
+          words: ["I", "am", "scared", "very", "is", "are", "we"],
+          answer: ["I", "am", "scared"]
+        },
+        {
+          id: 3,
+          name: "Apartment 3",
+          icon: "🦇",
+          prompt: "Build the sentence: We are in the kitchen.",
+          words: ["We", "are", "in", "the", "kitchen", "am", "they", "happy"],
+          answer: ["We", "are", "in", "the", "kitchen"]
+        },
+        {
+          id: 4,
+          name: "Apartment 4",
+          icon: "👻",
+          prompt: "Build the sentence: She has got a lantern.",
+          words: ["She", "has", "got", "a", "lantern", "have", "is", "blue"],
+          answer: ["She", "has", "got", "a", "lantern"]
+        },
+        {
+          id: 5,
+          name: "Apartment 5",
+          icon: "🧟",
+          prompt: "Build the sentence: The monster has got claws.",
+          words: ["The", "monster", "has", "got", "claws", "have", "are", "sharp"],
+          answer: ["The", "monster", "has", "got", "claws"]
+        },
+        {
+          id: 6,
+          name: "Apartment 6",
+          icon: "🕯️",
+          prompt: "Build the sentence: My friends are in the attic.",
+          words: ["My", "friends", "are", "in", "the", "attic", "am", "house"],
+          answer: ["My", "friends", "are", "in", "the", "attic"]
+        },
+        {
+          id: 7,
+          name: "Apartment 7",
+          icon: "🩸",
+          prompt: "Build the sentence: He has got a key.",
+          words: ["He", "has", "got", "a", "key", "are", "we", "small"],
+          answer: ["He", "has", "got", "a", "key"]
+        },
+        {
+          id: 8,
+          name: "Apartment 8",
+          icon: "🦉",
+          prompt: "Build the sentence: They are in the garden.",
+          words: ["They", "are", "in", "the", "garden", "am", "it", "happy"],
+          answer: ["They", "are", "in", "the", "garden"]
+        }
+      ];
+
+      const state = {
+        currentRoomId: null,
+        solved: new Set(),
+        selected: []
+      };
+
+      const doorGrid = document.getElementById("doorGrid");
+      const starsRow = document.getElementById("starsRow");
+      const roomTitle = document.getElementById("roomTitle");
+      const roomBadge = document.getElementById("roomBadge");
+      const questionBox = document.getElementById("questionBox");
+      const answerWrap = document.getElementById("answerWrap");
+      const wordBank = document.getElementById("wordBank");
+      const message = document.getElementById("message");
+      const secretRoom = document.getElementById("secretRoom");
+      const resetBtn = document.getElementById("resetBtn");
+
+      function getCurrentRoom() {
+        return rooms.find(room => room.id === state.currentRoomId) || null;
+      }
+
+      function renderStars() {
+        starsRow.innerHTML = "";
+
+        for (let i = 1; i <= rooms.length; i += 1) {
+          const star = document.createElement("span");
+          star.className = "star" + (state.solved.has(i) ? " active" : "");
+          star.textContent = "⭐";
+          starsRow.appendChild(star);
+        }
+      }
+
+      function renderDoors() {
+        doorGrid.innerHTML = "";
+
+        rooms.forEach(room => {
+          const button = document.createElement("button");
+          const isSolved = state.solved.has(room.id);
+          const isSelected = state.currentRoomId === room.id;
+          button.type = "button";
+          button.className = "door" + (isSolved ? " solved" : "") + (isSelected ? " selected" : "") + (state.currentRoomId !== null && !isSelected ? " locked" : "");
+
+          button.innerHTML = `
+            <span class="icon">${room.icon}</span>
+            <span class="num">${room.id}</span>
+            <div class="label">${isSolved ? "Solved" : "Open"}</div>
+          `;
+
+          button.addEventListener("click", () => {
+            if (state.currentRoomId === room.id || state.currentRoomId === null) {
+              openRoom(room.id);
+            }
+          });
+
+          doorGrid.appendChild(button);
+        });
+      }
+
+      function renderAnswerSlots() {
+        answerWrap.innerHTML = "";
+
+        const room = getCurrentRoom();
+        if (!room) return;
+
+        for (let i = 0; i < room.answer.length; i += 1) {
+          const slot = document.createElement("button");
+          slot.type = "button";
+          slot.className = "answer-slot";
+          slot.textContent = state.selected[i] || "";
+          slot.title = state.selected[i] ? "Click to remove" : "Empty slot";
+
+          if (state.selected[i]) {
+            slot.addEventListener("click", () => removeWordFromAnswer(i));
+          }
+
+          answerWrap.appendChild(slot);
+        }
+      }
+
+      function renderWordBank() {
+        const room = getCurrentRoom();
+        wordBank.innerHTML = "";
+
+        if (!room) return;
+
+        room.words.forEach(word => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "word";
+          button.textContent = word;
+          button.disabled = state.selected.includes(word);
+          button.addEventListener("click", () => addWordToAnswer(word));
+          wordBank.appendChild(button);
+        });
+      }
+
+      function addWordToAnswer(word) {
+        const room = getCurrentRoom();
+        if (!room || state.selected.includes(word)) return;
+
+        if (state.selected.length >= room.answer.length) {
+          setMessage("This sentence is complete. Click Check or Clear.", "bad");
+          return;
+        }
+
+        state.selected.push(word);
+        renderAnswerSlots();
+        renderWordBank();
+        message.textContent = "";
+      }
+
+      function removeWordFromAnswer(index) {
+        const word = state.selected[index];
+        if (!word) return;
+
+        state.selected.splice(index, 1);
+        renderAnswerSlots();
+        renderWordBank();
+        message.textContent = "";
+      }
+
+      function setMessage(text, type) {
+        message.textContent = text;
+        message.className = "message " + (type === "good" ? "good" : type === "bad" ? "bad" : "");
+      }
+
+      function clearAnswer() {
+        state.selected = [];
+        renderAnswerSlots();
+        renderWordBank();
+        setMessage("", "");
+      }
+
+      function openRoom(roomId) {
+        const room = rooms.find(r => r.id === roomId);
+        if (!room) return;
+
+        state.currentRoomId = roomId;
+        state.selected = [];
+        roomTitle.textContent = room.name;
+        roomBadge.textContent = state.solved.has(room.id) ? "Solved" : "Room " + room.id;
+        questionBox.textContent = `Build the sentence: ${room.prompt.replace("Build the sentence: ", "")}`;
+        renderDoors();
+        renderAnswerSlots();
+        renderWordBank();
+        setMessage("", "");
+      }
+
+      function checkAnswer() {
+        const room = getCurrentRoom();
+        if (!room) {
+          setMessage("Choose a room first.", "bad");
+          return;
+        }
+
+        const isCorrect = state.selected.length === room.answer.length &&
+          state.selected.every((word, index) => word === room.answer[index]);
+
+        if (isCorrect) {
+          state.solved.add(room.id);
+          renderStars();
+          renderDoors();
+          roomBadge.textContent = "Solved";
+          setMessage("Correct! Great job!", "good");
+
+          if (state.solved.size === rooms.length) {
+            secretRoom.classList.add("visible");
+            resetBtn.classList.add("visible");
+          } else {
+            secretRoom.classList.remove("visible");
+          }
+
+          return;
+        }
+
+        setMessage("Not quite. Try again!", "bad");
+      }
+
+      function resetGame() {
+        state.currentRoomId = null;
+        state.solved = new Set();
+        state.selected = [];
+        roomTitle.textContent = "Choose a door";
+        roomBadge.textContent = "Room";
+        questionBox.textContent = "Pick a door to explore. Complete all 8 apartments to unlock the Secret Room.";
+        secretRoom.classList.remove("visible");
+        resetBtn.classList.remove("visible");
+        renderStars();
+        renderDoors();
+        renderAnswerSlots();
+        renderWordBank();
+        setMessage("", "");
+      }
+
+      document.getElementById("clearBtn").addEventListener("click", clearAnswer);
+      document.getElementById("checkBtn").addEventListener("click", checkAnswer);
+      resetBtn.addEventListener("click", resetGame);
+
+      renderStars();
+      renderDoors();
+      renderAnswerSlots();
+      renderWordBank();
+    </script>
+  </body>
+</html>
